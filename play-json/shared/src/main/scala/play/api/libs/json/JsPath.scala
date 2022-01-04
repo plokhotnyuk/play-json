@@ -29,10 +29,11 @@ case class RecursiveSearch(key: String) extends PathNode {
    */
   def set(json: JsValue, transform: JsValue => JsValue): JsValue = json match {
     case JsObject(fields) => {
-      JsObject(fields.map { case (k, v) =>
-        if (k == this.key) {
-          k -> transform(v)
-        } else k -> set(v, transform)
+      JsObject(fields.map {
+        case (k, v) =>
+          if (k == this.key) {
+            k -> transform(v)
+          } else k -> set(v, transform)
       })
     }
 
@@ -41,9 +42,10 @@ case class RecursiveSearch(key: String) extends PathNode {
 
   private[json] def splitChildren(json: JsValue) = json match {
     case obj: JsObject =>
-      obj.fields.toList.map { case (k, v) =>
-        if (k == this.key) Right(this -> v)
-        else Left(KeyPathNode(k)      -> v)
+      obj.fields.toList.map {
+        case (k, v) =>
+          if (k == this.key) Right(this -> v)
+          else Left(KeyPathNode(k)      -> v)
       }
     case arr: JsArray =>
       arr.value.toList.zipWithIndex.map { case (js, j) => Left(IdxPathNode(j) -> js) }
@@ -64,11 +66,12 @@ case class KeyPathNode(key: String) extends PathNode {
   def set(json: JsValue, transform: JsValue => JsValue): JsValue = json match {
     case obj: JsObject =>
       var found = false
-      val o = JsObject(obj.fields.map { case (k, v) =>
-        if (k == this.key) {
-          found = true
-          k -> transform(v)
-        } else k -> v
+      val o = JsObject(obj.fields.map {
+        case (k, v) =>
+          if (k == this.key) {
+            found = true
+            k -> transform(v)
+          } else k -> v
       })
       if (!found) o ++ JsObject(Seq(this.key -> transform(JsObject.empty)))
       else o
@@ -77,9 +80,10 @@ case class KeyPathNode(key: String) extends PathNode {
 
   private[json] def splitChildren(json: JsValue) = json match {
     case obj: JsObject =>
-      obj.fields.toList.map { case (k, v) =>
-        if (k == this.key) Right(this -> v)
-        else Left(KeyPathNode(k)      -> v)
+      obj.fields.toList.map {
+        case (k, v) =>
+          if (k == this.key) Right(this -> v)
+          else Left(KeyPathNode(k)      -> v)
       }
     case _ => List()
   }
@@ -104,9 +108,10 @@ case class IdxPathNode(idx: Int) extends PathNode {
 
   private[json] def splitChildren(json: JsValue) = json match {
     case arr: JsArray =>
-      arr.value.toList.zipWithIndex.map { case (js, j) =>
-        if (j == idx) Right(this -> js)
-        else Left(IdxPathNode(j) -> js)
+      arr.value.toList.zipWithIndex.map {
+        case (js, j) =>
+          if (j == idx) Right(this -> js)
+          else Left(IdxPathNode(j) -> js)
       }
     case _ => List()
   }
@@ -173,8 +178,9 @@ object JsPath extends JsPath(List.empty) {
     if (isSimpleObject) {
       JsObject(objectMap)
     } else {
-      pathValues.foldLeft(JsObject.empty) { case (obj, (path, value)) =>
-        obj.deepMerge(buildSubPath(path, value))
+      pathValues.foldLeft(JsObject.empty) {
+        case (obj, (path, value)) =>
+          obj.deepMerge(buildSubPath(path, value))
       }
     }
   }

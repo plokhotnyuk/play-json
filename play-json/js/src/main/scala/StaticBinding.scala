@@ -53,9 +53,17 @@ object StaticBinding {
     fromJs(jsValue, escapeNonASCII, 0, _ => "")
 
   def prettyPrint(jsValue: JsValue): String =
-    fromJs(jsValue, false, 0, { l =>
-      0.until(l * 2).map(_ => ' ').mkString
-    }, newline = true, fieldValueSep = " : ", arraySep = ("[ ", ", ", " ]"))
+    fromJs(
+      jsValue,
+      false,
+      0,
+      { l =>
+        0.until(l * 2).map(_ => ' ').mkString
+      },
+      newline = true,
+      fieldValueSep = " : ",
+      arraySep = ("[ ", ", ", " ]")
+    )
 
   def toBytes(jsValue: JsValue): Array[Byte] =
     generateFromJsValue(jsValue, false).getBytes("UTF-8")
