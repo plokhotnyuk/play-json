@@ -718,41 +718,39 @@ class JsMacroImpl(val c: blackbox.Context) {
         }
 
       val resolvedImplicits = utility.implicits(resolver)
-      val canBuild = resolvedImplicits
-        .map {
-          case (name, Implicit(pt, impl, _, _)) =>
-            // Equivalent to __ \ "name", but uses a naming scheme
-            // of (String) => (String) to find the correct "name"
-            val cn = c.Expr[String](
-              q"$config.naming(${name.decodedName.toString})"
-            )
-            val jspathTree = q"$JsPath \ $cn"
-            val isOption   = pt.typeConstructor <:< optTpeCtor
+      val canBuild = resolvedImplicits.map {
+        case (name, Implicit(pt, impl, _, _)) =>
+          // Equivalent to __ \ "name", but uses a naming scheme
+          // of (String) => (String) to find the correct "name"
+          val cn = c.Expr[String](
+            q"$config.naming(${name.decodedName.toString})"
+          )
+          val jspathTree = q"$JsPath \ $cn"
+          val isOption   = pt.typeConstructor <:< optTpeCtor
 
-            val defaultValue = // not applicable for 'write' only
-              defaultValueMap.get(name).filter(_ => methodName != "write")
+          val defaultValue = // not applicable for 'write' only
+            defaultValueMap.get(name).filter(_ => methodName != "write")
 
-            // - If we're an default value, invoke the withDefault version
-            // - If we're an option with default value,
-            //   invoke the WithDefault version
-            (isOption, defaultValue) match {
-              case (true, Some(v)) =>
-                val c = TermName(s"${methodName}HandlerWithDefault")
-                q"$config.optionHandlers.$c($jspathTree, $v)($impl)"
+          // - If we're an default value, invoke the withDefault version
+          // - If we're an option with default value,
+          //   invoke the WithDefault version
+          (isOption, defaultValue) match {
+            case (true, Some(v)) =>
+              val c = TermName(s"${methodName}HandlerWithDefault")
+              q"$config.optionHandlers.$c($jspathTree, $v)($impl)"
 
-              case (true, _) =>
-                val c = TermName(s"${methodName}Handler")
-                q"$config.optionHandlers.$c($jspathTree)($impl)"
+            case (true, _) =>
+              val c = TermName(s"${methodName}Handler")
+              q"$config.optionHandlers.$c($jspathTree)($impl)"
 
-              case (false, Some(v)) =>
-                val c = TermName(s"${methodName}WithDefault")
-                q"$jspathTree.$c($v)($impl)"
+            case (false, Some(v)) =>
+              val c = TermName(s"${methodName}WithDefault")
+              q"$jspathTree.$c($v)($impl)"
 
-              case _ =>
-                q"$jspathTree.${TermName(methodName)}($impl)"
-            }
-        }
-        .reduceLeft[Tree] { (acc, r) => q"$acc.and($r)" }
+            case _ =>
+              q"$jspathTree.${TermName(methodName)}($impl)"
+          }
+      }.reduceLeft[Tree] { (acc, r) => q"$acc.and($r)" }
 
       val multiParam = params.length > 1
       // if case class has one single field, needs to use map/contramap/inmap on the Reads/Writes/Format instead of
