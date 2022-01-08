@@ -462,13 +462,12 @@ class JsMacroImpl(val c: blackbox.Context) {
       lazy val applyFunction: Option[(Tree, List[TypeSymbol], List[Symbol], List[Option[Tree]])] =
         maybeApply.flatMap { app =>
           app.paramLists.headOption.map { params =>
-            val defaultValues = params.map(_.asTerm).zipWithIndex.map {
-              case (p, i) =>
-                if (!p.isParamWithDefault) None
-                else {
-                  val getter = TermName("apply$default$" + (i + 1))
-                  Some(q"$companionObject.$getter")
-                }
+            val defaultValues = params.map(_.asTerm).zipWithIndex.map { case (p, i) =>
+              if (!p.isParamWithDefault) None
+              else {
+                val getter = TermName("apply$default$" + (i + 1))
+                Some(q"$companionObject.$getter")
+              }
             }
 
             val tree = if (hasVarArgs) {
@@ -512,15 +511,13 @@ class JsMacroImpl(val c: blackbox.Context) {
       def implicits(resolver: ImplicitResolver): List[(Name, Implicit)] = {
         val createImplicit = resolver.createImplicit(atpe, natag.tpe) _
 
-        val effectiveImplicits = params.map {
-          case (n, t) =>
-            n -> createImplicit(t)
+        val effectiveImplicits = params.map { case (n, t) =>
+          n -> createImplicit(t)
         }
 
         // if any implicit is missing, abort
-        val missingImplicits = effectiveImplicits.collect {
-          case (_, Implicit(t, EmptyTree /* ~= not found */, _, _)) =>
-            t
+        val missingImplicits = effectiveImplicits.collect { case (_, Implicit(t, EmptyTree /* ~= not found */, _, _)) =>
+          t
         }
 
         if (missingImplicits.nonEmpty) {
@@ -534,15 +531,13 @@ class JsMacroImpl(val c: blackbox.Context) {
       }
 
       lazy val boundTypes: Map[String, Type] =
-        applyFunction.fold(Map.empty[String, Type]) {
-          case (_, tparams, _, _) =>
-            tparams
-              .zip(tpeArgs)
-              .map {
-                case (sym, ty) =>
-                  sym.fullName -> ty
-              }
-              .toMap
+        applyFunction.fold(Map.empty[String, Type]) { case (_, tparams, _, _) =>
+          tparams
+            .zip(tpeArgs)
+            .map { case (sym, ty) =>
+              sym.fullName -> ty
+            }
+            .toMap
         }
 
       // To print the implicit types in the compiler messages
@@ -711,15 +706,14 @@ class JsMacroImpl(val c: blackbox.Context) {
       val defaultValueMap: Map[Name, Tree] =
         if (!hasOption[Json.DefaultValues]) Map.empty
         else {
-          (params, defaultValues).zipped.collect {
-            case (p, Some(dv)) =>
-              p.name.encodedName -> dv
+          (params, defaultValues).zipped.collect { case (p, Some(dv)) =>
+            p.name.encodedName -> dv
           }.toMap
         }
 
       val resolvedImplicits = utility.implicits(resolver)
-      val canBuild = resolvedImplicits.map {
-        case (name, Implicit(pt, impl, _, _)) =>
+      val canBuild = resolvedImplicits
+        .map { case (name, Implicit(pt, impl, _, _)) =>
           // Equivalent to __ \ "name", but uses a naming scheme
           // of (String) => (String) to find the correct "name"
           val cn = c.Expr[String](
@@ -750,7 +744,8 @@ class JsMacroImpl(val c: blackbox.Context) {
             case _ =>
               q"$jspathTree.${TermName(methodName)}($impl)"
           }
-      }.reduceLeft[Tree] { (acc, r) => q"$acc.and($r)" }
+        }
+        .reduceLeft[Tree] { (acc, r) => q"$acc.and($r)" }
 
       val multiParam = params.length > 1
       // if case class has one single field, needs to use map/contramap/inmap on the Reads/Writes/Format instead of
